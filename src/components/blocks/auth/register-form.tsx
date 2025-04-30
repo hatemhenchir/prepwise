@@ -22,12 +22,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 const formSchema = z.object({
-  username: z.string().min(2).max(50),
-  fullName: z.string().min(3).max(50),
-  email: z.string().email(),
-  password: z.string().min(8).max(50),
+  fullName: z
+    .string()
+    .min(3, "Full name must be at least 3 characters long.")
+    .max(50, "Full name cannot exceed 50 characters."),
+  email: z.string().email("Please enter a valid email address."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long.")
+    .max(50, "Password cannot exceed 50 characters."),
   profilePicture: z.string().url().optional(),
   resume: z.string().url().optional(),
 });
@@ -37,7 +43,6 @@ const RegisterForm = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
       fullName: "",
       email: "",
       password: "",
@@ -56,11 +61,13 @@ const RegisterForm = () => {
     <section className="flex items-center justify-center h-screen w-full ">
       <Card className="max-w-xl w-[90%] ">
         <CardHeader className="flex flex-col items-center justify-center ">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 font-semibold text-3xl text-primary-100">
             <Image src="/logo.svg" alt="logo" width={30} height={30} />
             PrepWise
           </CardTitle>
-          <CardDescription>Practice job interviews with AI</CardDescription>
+          <CardDescription className="font-semibold text-3xl  text-white text-center">
+            Practice job interviews with AI
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -119,7 +126,11 @@ const RegisterForm = () => {
                   <FormItem>
                     <FormLabel>Profile picture</FormLabel>
                     <FormControl>
-                      <Input type="file" {...field} />
+                      <Input
+                        type="file"
+                        placeholder="Upload an image"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -132,18 +143,29 @@ const RegisterForm = () => {
                   <FormItem>
                     <FormLabel>Resume</FormLabel>
                     <FormControl>
-                      <Input type="file" {...field} />
+                      <Input
+                        type="file"
+                        placeholder="Upload a pdf"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button className="w-full" type="submit">
+              <Button className="w-full " type="submit">
                 Create an account
               </Button>
             </form>
           </Form>
         </CardContent>
+        <CardFooter className="flex items-center justify-center gap-2 text-white text-sm">
+          Have an account already?{" "}
+          <Link className="font-bold " href={"/sign-in"}>
+            {" "}
+            Sign in
+          </Link>
+        </CardFooter>
       </Card>
     </section>
   );
