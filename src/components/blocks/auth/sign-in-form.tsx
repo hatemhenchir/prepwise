@@ -57,8 +57,19 @@ const SigninForm = () => {
       password,
     });
 
+    if (error?.code === "invalid_credentials") {
+      toast.error("Sign-in failed", {
+        description: "Invalid email or password. Please try again.",
+      });
+      return;
+    }
+
     if (error) {
-      toast.error("There was an error signing in. Please try again.");
+      toast.error("Sign-in failed", {
+        description: error.message || "Something went wrong. Please try again.",
+      });
+      console.log(error.code, error.name);
+
       return;
     }
 
