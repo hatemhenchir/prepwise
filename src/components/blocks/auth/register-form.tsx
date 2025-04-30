@@ -34,8 +34,22 @@ const formSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters long.")
     .max(50, "Password cannot exceed 50 characters."),
-  profilePicture: z.string().url().optional(),
-  resume: z.string().url().optional(),
+  profilePicture: z
+    .any()
+    .refine(
+      (file) => file?.length === 1 && file[0]?.type.startsWith("image/"),
+      {
+        message: "Please upload a valid image file.",
+      }
+    ),
+  resume: z
+    .any()
+    .refine(
+      (file) => file?.length === 1 && file[0]?.type === "application/pdf",
+      {
+        message: "Please upload a PDF file.",
+      }
+    ),
 });
 
 const RegisterForm = () => {
@@ -46,8 +60,8 @@ const RegisterForm = () => {
       fullName: "",
       email: "",
       password: "",
-      // profilePicture: "",
-      // resume: "",
+      profilePicture: [],
+      resume: [],
     },
   });
   // 2. Define a submit handler.
@@ -128,6 +142,7 @@ const RegisterForm = () => {
                     <FormControl>
                       <Input
                         type="file"
+                        accept="image/*"
                         placeholder="Upload an image"
                         {...field}
                       />
@@ -145,6 +160,7 @@ const RegisterForm = () => {
                     <FormControl>
                       <Input
                         type="file"
+                        accept="application/pdf"
                         placeholder="Upload a pdf"
                         {...field}
                       />
