@@ -4,7 +4,7 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
   fill?: string;
 }
 
-const Icon: React.FC<IconProps & { name: String }> = ({
+const Icon: React.FC<IconProps & { name: string }> = ({
   name,
   fill,
   ...rest
