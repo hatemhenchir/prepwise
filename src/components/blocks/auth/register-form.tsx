@@ -23,6 +23,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
+const supabase = createClient();
 
 const formSchema = z.object({
   fullName: z
@@ -36,23 +42,26 @@ const formSchema = z.object({
     .max(50, "Password cannot exceed 50 characters."),
   profilePicture: z
     .any()
-    .refine(
-      (file) => file?.length === 1 && file[0]?.type.startsWith("image/"),
-      {
-        message: "Please upload a valid image file.",
-      }
-    ),
+    // .refine(
+    //   (file) => file?.length === 1 && file[0]?.type.startsWith("image/"),
+    //   {
+    //     message: "Please upload a valid image file.",
+    //   }
+    // )
+    .optional(),
   resume: z
     .any()
-    .refine(
-      (file) => file?.length === 1 && file[0]?.type === "application/pdf",
-      {
-        message: "Please upload a PDF file.",
-      }
-    ),
+    // .refine(
+    //   (file) => file?.length === 1 && file[0]?.type === "application/pdf",
+    //   {
+    //     message: "Please upload a PDF file.",
+    //   }
+    // )
+    .optional(),
 });
 
 const RegisterForm = () => {
+  const router = useRouter();
   // 1. Define a form schema.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,10 +74,71 @@ const RegisterForm = () => {
     },
   });
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      const { data: authData, error: signupError } = await supabase.auth.signUp(
+        {
+          email: values.email,
+          password: values.password,
+        }
+      );
+
+      if (signupError) throw signupError;
+      const user = authData?.user;
+
+      const profilePicture = values.profilePicture[0];
+      console.log(values.profilePicture[0]);
+
+      const picPath = `${user?.id}/${profilePicture?.name}`;
+      const resumePath = `${user?.id}/${values.resume[0]?.name}`;
+
+      if (profilePicture?.name) {
+        const { error: avatarError } = await supabase.storage
+          .from("avatars")
+          .upload(picPath, profilePicture, {
+            upsert: true,
+          });
+
+        if (avatarError) throw avatarError;
+      }
+      if (values.resume[0]?.name) {
+        const { error: resumeError } = await supabase.storage
+          .from("resumes")
+          .upload(resumePath, values.resume[0], {
+            upsert: true,
+          });
+
+        if (resumeError) {
+          // rollback previous upload
+          await supabase.storage.from("avatars").remove([picPath]);
+          throw resumeError;
+        }
+      }
+
+      const { error } = await supabase.from("Profiles").insert({
+        id: user?.id,
+        full_name: values.fullName,
+        email: values.email,
+        profile_pic_path: profilePicture?.name ? picPath : null,
+        resume_path: values.resume[0]?.name ? resumePath : null,
+      });
+
+      if (error) {
+        // rollback both uploads
+        await supabase.storage.from("avatars").remove([picPath]);
+        await supabase.storage.from("resumes").remove([resumePath]);
+        throw error;
+      }
+
+      toast.success("Account created successfully. Please sign in.");
+      router.push("/sign-in");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unknown error occurred.");
+      }
+    }
   }
 
   return (
@@ -144,7 +214,10 @@ const RegisterForm = () => {
                         type="file"
                         accept="image/*"
                         placeholder="Upload an image"
-                        {...field}
+                        ref={field.ref}
+                        onChange={(e) => {
+                          field.onChange(e.target.files);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -162,15 +235,26 @@ const RegisterForm = () => {
                         type="file"
                         accept="application/pdf"
                         placeholder="Upload a pdf"
-                        {...field}
+                        ref={field.ref}
+                        onChange={(e) => {
+                          field.onChange(e.target.files);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button className="w-full " type="submit">
-                Create an account
+              <Button
+                className="w-full "
+                type="submit"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  "Create an account"
+                )}
               </Button>
             </form>
           </Form>
