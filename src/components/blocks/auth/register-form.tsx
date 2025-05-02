@@ -132,8 +132,12 @@ const RegisterForm = () => {
 
       toast.success("Account created successfully. Please sign in.");
       router.push("/sign-in");
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unknown error occurred.");
+      }
     }
   }
 
