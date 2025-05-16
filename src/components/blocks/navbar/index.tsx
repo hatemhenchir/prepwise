@@ -16,7 +16,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 const supabase = createClient();
 
 const Navbar = () => {
-  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+  const [profilePicPath, setProfilePicPath] = React.useState<string | null>(
+    null
+  );
   const [fullName, setFullName] = React.useState<string | null>(null);
 
   const router = useRouter();
@@ -52,13 +54,7 @@ const Navbar = () => {
         }
 
         if (data?.profile_pic_path) {
-          const { data: urlData } = await supabase.storage
-            .from("avatars")
-            .createSignedUrl(data.profile_pic_path, 300);
-
-          console.log("urlData", urlData?.signedUrl);
-
-          setAvatarUrl(urlData?.signedUrl ?? null);
+          setProfilePicPath(data?.profile_pic_path);
         }
       }
     };
@@ -75,9 +71,11 @@ const Navbar = () => {
       <div className="rounded-full  overflow-hidden h-[30px] w-[30px] ">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            {avatarUrl ? (
+            {profilePicPath ? (
               <Image
-                src={avatarUrl ?? "/default-avatar.png"}
+                src={`/api/avatar?path=${encodeURIComponent(
+                  profilePicPath || ""
+                )}`}
                 alt="logo"
                 width={30}
                 height={30}
