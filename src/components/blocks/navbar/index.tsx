@@ -2,11 +2,30 @@
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
 import React, { useEffect } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const supabase = createClient();
 
 const Navbar = () => {
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null);
+  const [fullName, setFullName] = React.useState<string | null>(null);
+
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+
+    router.push("/login");
+  };
 
   useEffect(() => {
     const fetchProfileImage = async () => {
@@ -22,11 +41,15 @@ const Navbar = () => {
       if (user) {
         const { data } = await supabase
           .from("Profiles")
-          .select("profile_pic_path")
+          .select("profile_pic_path, full_name")
           .eq("id", user.id)
           .single();
 
         console.log("avatarUrl", data?.profile_pic_path);
+
+        if (data?.full_name) {
+          setFullName(data?.full_name);
+        }
 
         if (data?.profile_pic_path) {
           const { data: urlData } = await supabase.storage
@@ -50,13 +73,29 @@ const Navbar = () => {
         PrepWise
       </div>
       <div className="rounded-full  overflow-hidden h-[30px] w-[30px] ">
-        <Image
-          src={avatarUrl ?? "/default-avatar.png"}
-          alt="logo"
-          width={30}
-          height={30}
-          className="w-full h-full object-cover"
-        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl ?? "/default-avatar.png"}
+                alt="logo"
+                width={30}
+                height={30}
+                className="w-full h-full object-cover cursor-pointer"
+              />
+            ) : (
+              <Skeleton className="w-full h-full" />
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuLabel>{fullName}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              Log out
+              {/* <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut> */}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
