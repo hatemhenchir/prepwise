@@ -80,6 +80,7 @@ const Navbar = () => {
                 width={30}
                 height={30}
                 className="w-full h-full object-cover cursor-pointer"
+                unoptimized
               />
             ) : (
               <Skeleton className="w-full h-full" />
